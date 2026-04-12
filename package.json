@@ -4,7 +4,7 @@
   "description": "AI-Powered Virtual Office - Gamified Agent Workspace",
   "main": "dist-electron/electron/main.js",
   "scripts": {
-    "dev": "concurrently -k \"vite\" \"npm run electron:dev\"",
+    "dev": "tsc -p tsconfig.electron.json && concurrently -k \"vite\" \"npm run electron:dev\"",
     "electron:dev": "wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
     "build": "tsc -p tsconfig.electron.json && vite build",
     "electron:build": "npm run build && electron-builder",
