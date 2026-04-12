@@ -1,41 +1,63 @@
-import { contextBridge, ipcRenderer } from 'electron';
-import { IPC_CHANNELS } from '../shared/types';
+const { contextBridge, ipcRenderer } = require('electron');
 
-// Expose protected methods that allow the renderer process
-// to use ipcRenderer without exposing the entire object
+// IPC 채널을 직접 정의 (외부 import 없이 preload 안정성 확보)
+const CH = {
+  COMPANY_LIST: 'company:list',
+  COMPANY_GET: 'company:get',
+  COMPANY_CREATE: 'company:create',
+  COMPANY_UPDATE: 'company:update',
+  COMPANY_DELETE: 'company:delete',
+  TEAM_LIST: 'team:list',
+  TEAM_CREATE: 'team:create',
+  TEAM_UPDATE: 'team:update',
+  TEAM_DELETE: 'team:delete',
+  AGENT_LIST: 'agent:list',
+  AGENT_GET: 'agent:get',
+  AGENT_CREATE: 'agent:create',
+  AGENT_UPDATE: 'agent:update',
+  AGENT_DELETE: 'agent:delete',
+  TASK_LIST: 'task:list',
+  TASK_CREATE: 'task:create',
+  TASK_UPDATE: 'task:update',
+  TASK_DELETE: 'task:delete',
+  CHAT_SEND: 'chat:send',
+  CHAT_HISTORY: 'chat:history',
+  CHAT_STREAM: 'chat:stream',
+};
+
 contextBridge.exposeInMainWorld('electronAPI', {
   // Company
-  companyList: () => ipcRenderer.invoke(IPC_CHANNELS.COMPANY_LIST),
-  companyGet: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.COMPANY_GET, id),
-  companyCreate: (data: any) => ipcRenderer.invoke(IPC_CHANNELS.COMPANY_CREATE, data),
-  companyUpdate: (id: string, data: any) => ipcRenderer.invoke(IPC_CHANNELS.COMPANY_UPDATE, id, data),
-  companyDelete: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.COMPANY_DELETE, id),
+  companyList: () => ipcRenderer.invoke(CH.COMPANY_LIST),
+  companyGet: (id: string) => ipcRenderer.invoke(CH.COMPANY_GET, id),
+  companyCreate: (data: any) => ipcRenderer.invoke(CH.COMPANY_CREATE, data),
+  companyUpdate: (id: string, data: any) => ipcRenderer.invoke(CH.COMPANY_UPDATE, id, data),
+  companyDelete: (id: string) => ipcRenderer.invoke(CH.COMPANY_DELETE, id),
 
   // Team
-  teamList: (companyId: string) => ipcRenderer.invoke(IPC_CHANNELS.TEAM_LIST, companyId),
-  teamCreate: (data: any) => ipcRenderer.invoke(IPC_CHANNELS.TEAM_CREATE, data),
-  teamUpdate: (id: string, data: any) => ipcRenderer.invoke(IPC_CHANNELS.TEAM_UPDATE, id, data),
-  teamDelete: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.TEAM_DELETE, id),
+  teamList: (companyId: string) => ipcRenderer.invoke(CH.TEAM_LIST, companyId),
+  teamCreate: (data: any) => ipcRenderer.invoke(CH.TEAM_CREATE, data),
+  teamUpdate: (id: string, data: any) => ipcRenderer.invoke(CH.TEAM_UPDATE, id, data),
+  teamDelete: (id: string) => ipcRenderer.invoke(CH.TEAM_DELETE, id),
 
   // Agent
-  agentList: (teamId: string) => ipcRenderer.invoke(IPC_CHANNELS.AGENT_LIST, teamId),
-  agentGet: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.AGENT_GET, id),
-  agentCreate: (data: any) => ipcRenderer.invoke(IPC_CHANNELS.AGENT_CREATE, data),
-  agentUpdate: (id: string, data: any) => ipcRenderer.invoke(IPC_CHANNELS.AGENT_UPDATE, id, data),
-  agentDelete: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.AGENT_DELETE, id),
+  agentList: (teamId: string) => ipcRenderer.invoke(CH.AGENT_LIST, teamId),
+  agentGet: (id: string) => ipcRenderer.invoke(CH.AGENT_GET, id),
+  agentCreate: (data: any) => ipcRenderer.invoke(CH.AGENT_CREATE, data),
+  agentUpdate: (id: string, data: any) => ipcRenderer.invoke(CH.AGENT_UPDATE, id, data),
+  agentDelete: (id: string) => ipcRenderer.invoke(CH.AGENT_DELETE, id),
 
   // Task
-  taskList: (companyId: string) => ipcRenderer.invoke(IPC_CHANNELS.TASK_LIST, companyId),
-  taskCreate: (data: any) => ipcRenderer.invoke(IPC_CHANNELS.TASK_CREATE, data),
-  taskUpdate: (id: string, data: any) => ipcRenderer.invoke(IPC_CHANNELS.TASK_UPDATE, id, data),
-  taskDelete: (id: string) => ipcRenderer.invoke(IPC_CHANNELS.TASK_DELETE, id),
+  taskList: (companyId: string) => ipcRenderer.invoke(CH.TASK_LIST, companyId),
+  taskCreate: (data: any) => ipcRenderer.invoke(CH.TASK_CREATE, data),
+  taskUpdate: (id: string, data: any) => ipcRenderer.invoke(CH.TASK_UPDATE, id, data),
+  taskDelete: (id: string) => ipcRenderer.invoke(CH.TASK_DELETE, id),
 
   // Chat
-  chatSend: (agentId: string, message: string) => ipcRenderer.invoke(IPC_CHANNELS.CHAT_SEND, agentId, message),
-  chatHistory: (agentId: string) => ipcRenderer.invoke(IPC_CHANNELS.CHAT_HISTORY, agentId),
+  chatSend: (agentId: string, message: string) => ipcRenderer.invoke(CH.CHAT_SEND, agentId, message),
+  chatHistory: (agentId: string) => ipcRenderer.invoke(CH.CHAT_HISTORY, agentId),
   onChatStream: (callback: (data: any) => void) => {
-    ipcRenderer.on(IPC_CHANNELS.CHAT_STREAM, (_event, data) => callback(data));
-    return () => ipcRenderer.removeAllListeners(IPC_CHANNELS.CHAT_STREAM);
+    ipcRenderer.on(CH.CHAT_STREAM, (_event: any, data: any) => callback(data));
+    return () => ipcRenderer.removeAllListeners(CH.CHAT_STREAM);
   },
 
   // Settings
