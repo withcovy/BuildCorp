@@ -33,7 +33,19 @@ export class ClaudeCLIProvider implements LLMProvider {
       return;
     }
 
-    const prompt = lastUserMsg.content;
+    // 대화 히스토리를 프롬프트에 포함 (세션이 없을 때)
+    let prompt = '';
+    const historyMessages = options.messages.filter((m) => m.role === 'user' || m.role === 'assistant');
+    if (!sessionId && historyMessages.length > 1) {
+      // 이전 대화를 컨텍스트로 포함
+      const prevMessages = historyMessages.slice(0, -1); // 마지막 메시지 제외
+      prompt += '<conversation_history>\n';
+      for (const msg of prevMessages) {
+        prompt += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n\n`;
+      }
+      prompt += '</conversation_history>\n\n';
+    }
+    prompt += lastUserMsg.content;
 
     const args: string[] = [
       '--print',
