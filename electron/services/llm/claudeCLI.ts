@@ -9,7 +9,7 @@ import type {
 export class ClaudeCLIProvider implements LLMProvider {
   name = 'claude-cli';
   private sessionIds: Map<string, string> = new Map();
-  private activeProcesses: Map<string, ChildProcess> = new Map(); // agentId -> process
+  private activeProcesses: Map<string, ChildProcess> = new Map();
 
   async chat(options: LLMRequestOptions): Promise<LLMResponse> {
     let content = '';
@@ -25,52 +25,48 @@ export class ClaudeCLIProvider implements LLMProvider {
 
   async *chatStream(options: LLMRequestOptions): AsyncGenerator<LLMStreamChunk> {
     const agentId = (options as any).agentId || 'default';
-    const sessionId = this.sessionIds.get(agentId);
 
+    // 전체 프롬프트 구성
+    let fullPrompt = '';
+
+    // 대화 히스토리 포함
+    const historyMessages = options.messages.filter((m) => m.role === 'user' || m.role === 'assistant');
+    if (historyMessages.length > 1) {
+      const prevMessages = historyMessages.slice(0, -1);
+      fullPrompt += 'Here is our conversation so far:\n\n';
+      for (const msg of prevMessages) {
+        const role = msg.role === 'user' ? 'Human' : 'Assistant';
+        fullPrompt += `${role}: ${msg.content}\n\n`;
+      }
+      fullPrompt += '---\n\n';
+    }
+
+    // 마지막 사용자 메시지
     const lastUserMsg = [...options.messages].reverse().find((m) => m.role === 'user');
     if (!lastUserMsg) {
       yield { type: 'error', error: 'No user message found' };
       return;
     }
+    fullPrompt += lastUserMsg.content;
 
-    // 대화 히스토리를 프롬프트에 포함 (세션이 없을 때)
-    let prompt = '';
-    const historyMessages = options.messages.filter((m) => m.role === 'user' || m.role === 'assistant');
-    if (!sessionId && historyMessages.length > 1) {
-      // 이전 대화를 컨텍스트로 포함
-      const prevMessages = historyMessages.slice(0, -1); // 마지막 메시지 제외
-      prompt += '<conversation_history>\n';
-      for (const msg of prevMessages) {
-        prompt += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n\n`;
-      }
-      prompt += '</conversation_history>\n\n';
-    }
-    prompt += lastUserMsg.content;
-
-    const args: string[] = [
-      '--print',
-      '--output-format', 'text',
-    ];
+    // claude CLI 인자 - 프롬프트는 stdin으로 전달, 인자에는 넣지 않음
+    const args: string[] = ['--print', '--output-format', 'text'];
 
     if (options.systemPrompt) {
       args.push('--system-prompt', options.systemPrompt);
-    }
-
-    if (sessionId) {
-      args.push('--resume', sessionId);
     }
 
     if (options.model && options.model !== 'claude-cli-default') {
       args.push('--model', options.model);
     }
 
-    args.push(prompt);
+    // stdin으로 프롬프트 전달 (-로 stdin 읽기)
+    args.push('-');
 
     const workingDir = (options as any).workingDir || process.cwd();
-    yield* this.runCLI(args, agentId, workingDir);
+    yield* this.runCLI(args, agentId, workingDir, fullPrompt);
   }
 
-  // 에이전트 중단
   stop(agentId: string): boolean {
     const proc = this.activeProcesses.get(agentId);
     if (proc && !proc.killed) {
@@ -81,7 +77,7 @@ export class ClaudeCLIProvider implements LLMProvider {
     return false;
   }
 
-  private async *runCLI(args: string[], agentId: string, cwd: string): AsyncGenerator<LLMStreamChunk> {
+  private async *runCLI(args: string[], agentId: string, cwd: string, stdinData?: string): AsyncGenerator<LLMStreamChunk> {
     try {
       const proc = spawn('claude', args, {
         shell: true,
@@ -90,17 +86,19 @@ export class ClaudeCLIProvider implements LLMProvider {
         env: { ...process.env },
       });
 
-      // 활성 프로세스 등록
       this.activeProcesses.set(agentId, proc);
 
-      let fullOutput = '';
+      // stdin으로 프롬프트 전달
+      if (stdinData && proc.stdin) {
+        proc.stdin.write(stdinData);
+        proc.stdin.end();
+      }
+
       let errorOutput = '';
 
       if (proc.stdout) {
-        const stdoutGen = this.streamFromReadable(proc.stdout);
-        for await (const chunk of stdoutGen) {
-          fullOutput += chunk;
-          yield { type: 'text', content: chunk };
+        for await (const chunk of proc.stdout) {
+          yield { type: 'text', content: chunk.toString() };
         }
       }
 
@@ -118,7 +116,6 @@ export class ClaudeCLIProvider implements LLMProvider {
         });
       });
 
-      // 프로세스 정리
       this.activeProcesses.delete(agentId);
 
       if (exitCode !== 0 && errorOutput && !proc.killed) {
@@ -130,12 +127,6 @@ export class ClaudeCLIProvider implements LLMProvider {
     } catch (err: any) {
       this.activeProcesses.delete(agentId);
       yield { type: 'error', error: `Failed to run claude CLI: ${err.message}` };
-    }
-  }
-
-  private async *streamFromReadable(readable: NodeJS.ReadableStream): AsyncGenerator<string> {
-    for await (const chunk of readable) {
-      yield chunk.toString();
     }
   }
 
