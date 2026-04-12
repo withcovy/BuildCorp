@@ -8,6 +8,7 @@ import { CompanySelector } from './components/CompanySelector';
 import { OfficeView } from './components/office/OfficeView';
 import { DashboardView } from './components/dashboard/DashboardView';
 import { TaskView } from './components/task/TaskView';
+import { WorkflowView } from './components/workflow/WorkflowView';
 import { ChatPanel } from './components/chat/ChatPanel';
 import { SettingsModal } from './components/settings/SettingsModal';
 
@@ -21,6 +22,8 @@ function MainContent() {
       return <DashboardView />;
     case 'tasks':
       return <TaskView />;
+    case 'workflow':
+      return <WorkflowView />;
     default:
       return <OfficeView />;
   }

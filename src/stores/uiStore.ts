@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type MainView = 'office' | 'dashboard' | 'tasks';
+export type MainView = 'office' | 'dashboard' | 'tasks' | 'workflow';
 
 interface UIState {
   mainView: MainView;

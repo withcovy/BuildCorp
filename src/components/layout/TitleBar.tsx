@@ -5,6 +5,7 @@ const viewTabs: { key: MainView; label: string; icon: string }[] = [
   { key: 'office', label: '사무실', icon: '🏢' },
   { key: 'dashboard', label: '대시보드', icon: '📊' },
   { key: 'tasks', label: '태스크', icon: '📋' },
+  { key: 'workflow', label: '워크플로우', icon: '🔀' },
 ];
 
 export function TitleBar({ onSettingsClick }: { onSettingsClick?: () => void }) {
