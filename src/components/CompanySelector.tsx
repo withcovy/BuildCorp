@@ -90,12 +90,25 @@ export function CompanySelector() {
             />
             <div>
               <label className="text-slate-500 text-xs mb-1 block">Project Folder</label>
-              <input
-                value={form.workingDir}
-                onChange={(e) => setForm({ ...form, workingDir: e.target.value })}
-                placeholder="e.g. D:\projects\my-app"
-                className="w-full bg-slate-900 text-slate-200 text-sm rounded-lg px-3 py-2.5 outline-none border border-slate-700 focus:border-indigo-500 transition-colors placeholder-slate-600"
-              />
+              <div className="flex gap-2">
+                <div className="flex-1 bg-slate-900 text-sm rounded-lg px-3 py-2.5 border border-slate-700 min-h-[38px] flex items-center">
+                  {form.workingDir ? (
+                    <span className="text-slate-200 font-mono text-xs truncate">{form.workingDir}</span>
+                  ) : (
+                    <span className="text-slate-600">No folder selected</span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const folder = await window.electronAPI?.selectFolder?.();
+                    if (folder) setForm({ ...form, workingDir: folder });
+                  }}
+                  className="bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm px-3 rounded-lg transition-colors whitespace-nowrap"
+                >
+                  Browse
+                </button>
+              </div>
               <div className="text-slate-600 text-[10px] mt-1">AI agents will work in this folder</div>
             </div>
             <div className="flex gap-3">

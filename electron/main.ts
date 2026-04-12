@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import { initDatabase } from './services/database/init';
 import { registerCompanyHandlers } from './ipc/companyHandlers';
@@ -65,6 +65,15 @@ app.whenReady().then(() => {
   registerTaskHandlers(ipcMain, db);
   registerChatHandlers(ipcMain, db);
   registerSettingsHandlers(ipcMain, db);
+
+  // 폴더 선택 다이얼로그
+  ipcMain.handle('dialog:selectFolder', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openDirectory'],
+      title: 'Select Project Folder',
+    });
+    return result.canceled ? null : result.filePaths[0];
+  });
 
   createWindow();
 

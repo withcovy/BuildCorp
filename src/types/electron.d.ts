@@ -36,6 +36,8 @@ export interface ElectronAPI {
   llmValidate: (provider: string) => Promise<boolean>;
   llmModels: (provider: string) => Promise<string[]>;
   llmProviders: () => Promise<string[]>;
+  // Dialog
+  selectFolder: () => Promise<string | null>;
 }
 
 declare global {

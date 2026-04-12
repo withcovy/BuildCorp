@@ -70,4 +70,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   llmValidate: (provider: string) => ipcRenderer.invoke('llm:validate', provider),
   llmModels: (provider: string) => ipcRenderer.invoke('llm:models', provider),
   llmProviders: () => ipcRenderer.invoke('llm:providers'),
+
+  // Dialog
+  selectFolder: () => ipcRenderer.invoke('dialog:selectFolder'),
 });

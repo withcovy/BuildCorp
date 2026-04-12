@@ -85,13 +85,29 @@ export function DashboardView() {
               <EditField label="Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
               <EditField label="Industry" value={form.industry} onChange={(v) => setForm({ ...form, industry: v })} />
               <EditField label="Description" value={form.description} onChange={(v) => setForm({ ...form, description: v })} />
-              <EditField
-                label="Project Folder"
-                value={form.workingDir}
-                onChange={(v) => setForm({ ...form, workingDir: v })}
-                placeholder="e.g. D:\projects\my-app"
-                hint="AI agents will work in this folder"
-              />
+              <div>
+                <label className="text-slate-500 text-xs mb-1 block">Project Folder</label>
+                <div className="flex gap-2">
+                  <div className="flex-1 bg-slate-800 text-sm rounded-lg px-3 py-2 border border-slate-700 flex items-center">
+                    {form.workingDir ? (
+                      <span className="text-slate-200 font-mono text-xs truncate">{form.workingDir}</span>
+                    ) : (
+                      <span className="text-slate-600 text-sm">No folder selected</span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const folder = await window.electronAPI?.selectFolder?.();
+                      if (folder) setForm({ ...form, workingDir: folder });
+                    }}
+                    className="bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm px-3 rounded-lg transition-colors"
+                  >
+                    Browse
+                  </button>
+                </div>
+                <div className="text-slate-600 text-[10px] mt-1">AI agents will work in this folder</div>
+              </div>
               <div className="flex gap-3 pt-1">
                 <button
                   onClick={saveEdit}
