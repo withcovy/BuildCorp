@@ -4,12 +4,14 @@
   "description": "AI-Powered Virtual Office - Gamified Agent Workspace",
   "main": "dist-electron/electron/main.js",
   "scripts": {
-    "dev": "tsc -p tsconfig.electron.json && concurrently -k \"vite\" \"npm run electron:dev\"",
+    "dev": "tsc -p tsconfig.electron.json && concurrently -k \"vite --port 5173 --strictPort\" \"npm run electron:dev\"",
     "electron:dev": "wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
     "build": "tsc -p tsconfig.electron.json && vite build",
     "electron:build": "npm run build && electron-builder",
     "vite:dev": "vite",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
+    "rebuild": "electron-rebuild -f -w better-sqlite3"
   },
   "keywords": [
     "ai",
@@ -22,6 +24,7 @@
   "license": "MIT",
   "type": "commonjs",
   "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
     "@tailwindcss/vite": "^4.2.2",
     "@types/better-sqlite3": "^7.6.13",
     "@types/react": "^19.2.14",

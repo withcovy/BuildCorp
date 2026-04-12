@@ -24,6 +24,7 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
     },
     frame: false,
     titleBarStyle: 'hidden',
@@ -48,6 +49,12 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  const preloadPath = path.join(__dirname, 'preload.js');
+  const fs = require('fs');
+  console.log('[BuildCorp] Preload path:', preloadPath);
+  console.log('[BuildCorp] Preload exists:', fs.existsSync(preloadPath));
+  console.log('[BuildCorp] __dirname:', __dirname);
+
   // Initialize database
   const db = initDatabase();
 
