@@ -1,5 +1,6 @@
 import type { LLMProvider } from './types';
 import { ClaudeProvider } from './claude';
+import { ClaudeCLIProvider } from './claudeCLI';
 import { OpenAIProvider } from './openai';
 import { OllamaProvider } from './ollama';
 import type { LLMProvider as LLMProviderType } from '../../../shared/types';
@@ -19,6 +20,9 @@ export class LLMManager {
     this.config = config;
     this.providers.clear();
 
+    // Claude CLI는 항상 추가 (Max 구독, API 키 불필요)
+    this.providers.set('claude-cli', new ClaudeCLIProvider());
+
     if (config.claude?.apiKey) {
       this.providers.set('claude', new ClaudeProvider(config.claude.apiKey));
     }
@@ -29,7 +33,7 @@ export class LLMManager {
     this.providers.set('ollama', new OllamaProvider(config.ollama?.baseUrl));
   }
 
-  getProvider(name: LLMProviderType): LLMProvider | null {
+  getProvider(name: string): LLMProvider | null {
     return this.providers.get(name) || null;
   }
 

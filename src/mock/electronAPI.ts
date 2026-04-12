@@ -223,7 +223,14 @@ export const mockElectronAPI = {
 
     try {
       let result = '';
-      if (provider === 'claude') {
+      if (provider === 'claude-cli') {
+        const cliMsg = 'Claude CLI는 Electron 앱에서만 사용 가능합니다. "npm run dev"로 Electron 앱을 실행해주세요.';
+        setTimeout(() => {
+          chatStreamListeners.forEach((cb) => cb({ agentId, type: 'text', content: cliMsg }));
+          chatStreamListeners.forEach((cb) => cb({ agentId, type: 'done', content: cliMsg }));
+        }, 100);
+        result = cliMsg;
+      } else if (provider === 'claude') {
         result = await callClaudeAPI(apiKey, agent.llmModel, systemPrompt, recentHistory, message, agentId);
       } else if (provider === 'openai') {
         result = await callOpenAIAPI(apiKey, agent.llmModel, systemPrompt, recentHistory, message, agentId);

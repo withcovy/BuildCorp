@@ -21,7 +21,7 @@ export interface Team {
 
 // === Agent (직원) ===
 export type AgentStatus = 'idle' | 'working' | 'break' | 'meeting';
-export type LLMProvider = 'claude' | 'openai' | 'ollama';
+export type LLMProvider = 'claude-cli' | 'claude' | 'openai' | 'ollama';
 
 export interface AgentStats {
   tasksCompleted: number;

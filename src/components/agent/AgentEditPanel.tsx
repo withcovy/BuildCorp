@@ -7,13 +7,15 @@ interface Props {
   onClose: () => void;
 }
 
-const PROVIDERS: { value: LLMProvider; label: string }[] = [
-  { value: 'claude', label: 'Claude (Anthropic)' },
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'ollama', label: 'Ollama (Local)' },
+const PROVIDERS: { value: LLMProvider; label: string; needsKey: boolean }[] = [
+  { value: 'claude-cli', label: 'Claude Code (Max, Free)', needsKey: false },
+  { value: 'claude', label: 'Claude API (Paid)', needsKey: true },
+  { value: 'openai', label: 'OpenAI API (Paid)', needsKey: true },
+  { value: 'ollama', label: 'Ollama (Local, Free)', needsKey: false },
 ];
 
 const DEFAULT_MODELS: Record<LLMProvider, string[]> = {
+  'claude-cli': ['claude-cli-default', 'claude-sonnet-4-20250514', 'claude-opus-4-20250514', 'claude-haiku-4-5-20251001'],
   claude: ['claude-sonnet-4-20250514', 'claude-haiku-4-5-20251001', 'claude-opus-4-20250514'],
   openai: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4o', 'gpt-4o-mini', 'o3', 'o4-mini'],
   ollama: ['llama3', 'codellama', 'mistral', 'mixtral'],
@@ -147,8 +149,8 @@ export function AgentEditPanel({ agentId, onClose }: Props) {
               </select>
             </Field>
 
-            {/* API Key */}
-            {form.llmProvider !== 'ollama' && (
+            {/* API Key - only for providers that need it */}
+            {PROVIDERS.find((p) => p.value === form.llmProvider)?.needsKey && (
               <Field label="API Key" hint="This agent's personal API key">
                 <input
                   type="password"

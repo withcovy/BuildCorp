@@ -46,7 +46,29 @@ export async function runAgent(options: AgentRunOptions): Promise<string> {
   let fullResponse = '';
   let loopCount = 0;
 
-  // 도구 사용 루프: LLM이 도구 호출하면 실행하고 결과 넘기기 반복
+  // Claude CLI는 자체적으로 도구를 사용하므로 단순 스트리밍
+  if (agent.llmProvider === 'claude-cli') {
+    const stream = provider.chatStream({
+      model: agent.llmModel,
+      messages,
+      systemPrompt,
+      agentId: agent.id,
+    } as any);
+
+    for await (const chunk of stream) {
+      if (chunk.type === 'text' && chunk.content) {
+        fullResponse += chunk.content;
+        onStream?.({ type: 'text', content: chunk.content });
+      } else if (chunk.type === 'error') {
+        onStream?.({ type: 'error', error: chunk.error || 'Unknown error' });
+        return fullResponse;
+      }
+    }
+    onStream?.({ type: 'done', content: fullResponse });
+    return fullResponse;
+  }
+
+  // API 프로바이더: 도구 사용 루프
   while (loopCount < MAX_TOOL_LOOPS) {
     loopCount++;
 
