@@ -182,19 +182,69 @@ export const mockElectronAPI = {
     return { success: true };
   },
 
-  // Chat (mock - no real LLM in browser)
-  chatSend: async (_agentId: string, message: string) => {
-    return {
-      success: true,
-      content: `[Mock Response] I received your message: "${message}". Connect an API key in Settings to enable real AI responses.`,
-    };
+  // Chat - 브라우저에서도 실제 LLM API 호출
+  chatSend: async (agentId: string, message: string) => {
+    const agent = getStore<Agent>('agents').find((a) => a.id === agentId);
+    if (!agent) return { success: false, error: 'Agent not found' };
+
+    // 사용자 메시지 저장
+    const chatKey = `chat_${agentId}`;
+    const history = getStore<any>(chatKey);
+    history.push({ id: uuidv4(), agentId, role: 'user', content: message, timestamp: new Date().toISOString() });
+    setStore(chatKey, history);
+
+    // API 키 확인
+    const provider = agent.llmProvider;
+    const apiKey = provider === 'claude'
+      ? getSettings('llm.claude.apiKey')
+      : provider === 'openai'
+      ? getSettings('llm.openai.apiKey')
+      : null;
+
+    if (!apiKey) {
+      const noKeyMsg = `Settings에서 ${provider} API 키를 입력해주세요.`;
+      // 스트림 콜백으로 전달
+      setTimeout(() => {
+        chatStreamListeners.forEach((cb) => cb({ agentId, type: 'text', content: noKeyMsg }));
+        chatStreamListeners.forEach((cb) => cb({ agentId, type: 'done', content: noKeyMsg }));
+      }, 100);
+      history.push({ id: uuidv4(), agentId, role: 'assistant', content: noKeyMsg, timestamp: new Date().toISOString() });
+      setStore(chatKey, history);
+      return { success: true, content: noKeyMsg };
+    }
+
+    // 대화 히스토리 구성 (최근 20개)
+    const recentHistory = history.slice(-21, -1).map((m: any) => ({ role: m.role, content: m.content }));
+
+    // System prompt
+    const systemPrompt = agent.systemPrompt || `You are ${agent.name}. ${agent.specialty ? `Your specialty is ${agent.specialty}.` : ''} ${agent.personality || ''}`.trim();
+
+    try {
+      let result = '';
+      if (provider === 'claude') {
+        result = await callClaudeAPI(apiKey, agent.llmModel, systemPrompt, recentHistory, message, agentId);
+      } else if (provider === 'openai') {
+        result = await callOpenAIAPI(apiKey, agent.llmModel, systemPrompt, recentHistory, message, agentId);
+      }
+
+      history.push({ id: uuidv4(), agentId, role: 'assistant', content: result, timestamp: new Date().toISOString() });
+      setStore(chatKey, history);
+      return { success: true, content: result };
+    } catch (err: any) {
+      const errorMsg = `Error: ${err.message}`;
+      chatStreamListeners.forEach((cb) => cb({ agentId, type: 'error', error: errorMsg }));
+      chatStreamListeners.forEach((cb) => cb({ agentId, type: 'done', content: errorMsg }));
+      history.push({ id: uuidv4(), agentId, role: 'assistant', content: errorMsg, timestamp: new Date().toISOString() });
+      setStore(chatKey, history);
+      return { success: false, error: errorMsg };
+    }
   },
 
-  chatHistory: async (_agentId: string) => [],
+  chatHistory: async (agentId: string) => getStore<any>(`chat_${agentId}`),
 
   onChatStream: (callback: (data: any) => void) => {
-    // No-op in browser mode
-    return () => {};
+    chatStreamListeners.add(callback);
+    return () => { chatStreamListeners.delete(callback); };
   },
 
   // Settings
@@ -220,3 +270,115 @@ export const mockElectronAPI = {
   },
   llmProviders: async () => ['claude', 'openai', 'ollama'],
 };
+
+// --- 스트리밍 리스너 ---
+const chatStreamListeners = new Set<(data: any) => void>();
+
+// --- Claude API 호출 (브라우저 fetch) ---
+async function callClaudeAPI(
+  apiKey: string, model: string, systemPrompt: string,
+  history: { role: string; content: string }[], userMessage: string, agentId: string,
+): Promise<string> {
+  const messages = [...history, { role: 'user', content: userMessage }]
+    .filter((m) => m.role === 'user' || m.role === 'assistant');
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: model || 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages,
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Claude API (${response.status}): ${errText}`);
+  }
+
+  return streamSSE(response, agentId);
+}
+
+// --- OpenAI API 호출 ---
+async function callOpenAIAPI(
+  apiKey: string, model: string, systemPrompt: string,
+  history: { role: string; content: string }[], userMessage: string, agentId: string,
+): Promise<string> {
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...history,
+    { role: 'user', content: userMessage },
+  ];
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: model || 'gpt-4o',
+      messages,
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`OpenAI API (${response.status}): ${errText}`);
+  }
+
+  return streamSSE(response, agentId);
+}
+
+// --- SSE 스트림 파서 (Claude / OpenAI 공통) ---
+async function streamSSE(response: Response, agentId: string): Promise<string> {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullText = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') continue;
+
+      try {
+        const parsed = JSON.parse(data);
+
+        // Claude format
+        if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+          fullText += parsed.delta.text;
+          chatStreamListeners.forEach((cb) => cb({ agentId, type: 'text', content: parsed.delta.text }));
+        }
+        // OpenAI format
+        if (parsed.choices?.[0]?.delta?.content) {
+          const chunk = parsed.choices[0].delta.content;
+          fullText += chunk;
+          chatStreamListeners.forEach((cb) => cb({ agentId, type: 'text', content: chunk }));
+        }
+      } catch {
+        // skip
+      }
+    }
+  }
+
+  chatStreamListeners.forEach((cb) => cb({ agentId, type: 'done', content: fullText }));
+  return fullText;
+}
