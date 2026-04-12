@@ -15,7 +15,17 @@ export function initDatabase(): Database.Database {
 
   createTables(db);
 
+  migrate(db);
+
   return db;
+}
+
+function migrate(db: Database.Database) {
+  // 기존 companies 테이블에 working_dir 컬럼이 없으면 추가
+  const columns = db.prepare("PRAGMA table_info(companies)").all() as any[];
+  if (columns.length > 0 && !columns.find((c: any) => c.name === 'working_dir')) {
+    db.exec("ALTER TABLE companies ADD COLUMN working_dir TEXT NOT NULL DEFAULT ''");
+  }
 }
 
 function createTables(db: Database.Database) {
