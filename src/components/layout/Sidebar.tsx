@@ -109,19 +109,50 @@ function TeamItem({
   onAddAgent: () => void;
   onDelete: () => void;
 }) {
+  const { updateTeam } = useCompanyStore();
   const [expanded, setExpanded] = useState(true);
+  const [editingTeam, setEditingTeam] = useState(false);
+  const [teamName, setTeamName] = useState(team.name);
+
+  const handleTeamRename = () => {
+    if (teamName.trim() && teamName.trim() !== team.name) {
+      updateTeam(team.id, { name: teamName.trim() });
+    }
+    setEditingTeam(false);
+  };
 
   return (
     <div className="border-b border-slate-800/50">
       {/* Team header */}
       <div
-        onClick={() => { onSelect(); setExpanded(!expanded); }}
+        onClick={() => { if (!editingTeam) { onSelect(); setExpanded(!expanded); } }}
         className={`flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors ${
           isSelected ? 'bg-slate-800/70' : 'hover:bg-slate-800/30'
         }`}
       >
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: team.color }} />
-        <span className="text-slate-300 text-sm font-medium flex-1 truncate">{team.name}</span>
+        {editingTeam ? (
+          <input
+            autoFocus
+            value={teamName}
+            onChange={(e) => setTeamName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleTeamRename();
+              if (e.key === 'Escape') { setTeamName(team.name); setEditingTeam(false); }
+            }}
+            onBlur={handleTeamRename}
+            onClick={(e) => e.stopPropagation()}
+            className="flex-1 bg-slate-800 text-slate-200 text-sm rounded px-1 py-0.5 outline-none border border-indigo-500"
+          />
+        ) : (
+          <span
+            className="text-slate-300 text-sm font-medium flex-1 truncate"
+            onDoubleClick={(e) => { e.stopPropagation(); setTeamName(team.name); setEditingTeam(true); }}
+            title="Double-click to rename"
+          >
+            {team.name}
+          </span>
+        )}
         <span className="text-slate-600 text-xs">{agents.length}</span>
         <button
           onClick={(e) => { e.stopPropagation(); onAddAgent(); }}
@@ -136,29 +167,65 @@ function TeamItem({
       {expanded && agents.length > 0 && (
         <div className="pb-1">
           {agents.map((agent) => (
-            <div
-              key={agent.id}
-              onClick={() => onSelectAgent(agent.id)}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                (window as any).__openInventory?.(agent.id);
-              }}
-              className="flex items-center gap-2 px-3 py-1.5 pl-7 cursor-pointer hover:bg-slate-800/30 transition-colors group"
-              title="Right-click for inventory"
-            >
-              <StatusDot status={agent.status} />
-              <span className="text-slate-400 text-xs truncate flex-1">{agent.name}</span>
-              <button
-                onClick={(e) => { e.stopPropagation(); (window as any).__openInventory?.(agent.id); }}
-                className="text-slate-700 text-[10px] group-hover:text-indigo-400 transition-colors"
-                title="Inventory"
-              >
-                🎒
-              </button>
-            </div>
+            <AgentRow key={agent.id} agent={agent} onSelect={() => onSelectAgent(agent.id)} />
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function AgentRow({ agent, onSelect }: { agent: Agent; onSelect: () => void }) {
+  const { updateAgent } = useCompanyStore();
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(agent.name);
+
+  const handleRename = () => {
+    if (editName.trim() && editName.trim() !== agent.name) {
+      updateAgent(agent.id, { name: editName.trim() });
+    }
+    setEditing(false);
+  };
+
+  return (
+    <div
+      onClick={() => !editing && onSelect()}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        (window as any).__openInventory?.(agent.id);
+      }}
+      className="flex items-center gap-2 px-3 py-1.5 pl-7 cursor-pointer hover:bg-slate-800/30 transition-colors group"
+    >
+      <StatusDot status={agent.status} />
+      {editing ? (
+        <input
+          autoFocus
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleRename();
+            if (e.key === 'Escape') { setEditName(agent.name); setEditing(false); }
+          }}
+          onBlur={handleRename}
+          onClick={(e) => e.stopPropagation()}
+          className="flex-1 bg-slate-800 text-slate-200 text-xs rounded px-1 py-0.5 outline-none border border-indigo-500"
+        />
+      ) : (
+        <span
+          className="text-slate-400 text-xs truncate flex-1"
+          onDoubleClick={(e) => { e.stopPropagation(); setEditName(agent.name); setEditing(true); }}
+          title="Double-click to rename"
+        >
+          {agent.name}
+        </span>
+      )}
+      <button
+        onClick={(e) => { e.stopPropagation(); (window as any).__openInventory?.(agent.id); }}
+        className="text-slate-700 text-[10px] group-hover:text-indigo-400 transition-colors"
+        title="Inventory"
+      >
+        🎒
+      </button>
     </div>
   );
 }
