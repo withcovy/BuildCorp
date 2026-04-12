@@ -7,7 +7,7 @@ const viewTabs: { key: MainView; label: string; icon: string }[] = [
   { key: 'tasks', label: '태스크', icon: '📋' },
 ];
 
-export function TitleBar() {
+export function TitleBar({ onSettingsClick }: { onSettingsClick?: () => void }) {
   const { currentCompany, companies } = useCompanyStore();
   const { mainView, setMainView } = useUIStore();
 
@@ -48,9 +48,13 @@ export function TitleBar() {
 
       {/* Spacer for window controls */}
       <div className="flex-1" />
-      <div className="no-drag text-slate-500 text-xs">
-        {companies.length} companies
-      </div>
+      <button
+        onClick={onSettingsClick}
+        className="no-drag text-slate-500 hover:text-slate-300 text-sm mr-2 transition-colors"
+        title="Settings"
+      >
+        Settings
+      </button>
     </div>
   );
 }

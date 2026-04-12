@@ -27,6 +27,14 @@ export interface ElectronAPI {
   chatSend: (agentId: string, message: string) => Promise<any>;
   chatHistory: (agentId: string) => Promise<any[]>;
   onChatStream: (callback: (data: any) => void) => () => void;
+  // Settings
+  settingsGet: (key: string) => Promise<any>;
+  settingsSet: (key: string, value: any) => Promise<{ success: boolean }>;
+  settingsGetAll: () => Promise<Record<string, any>>;
+  // LLM
+  llmValidate: (provider: string) => Promise<boolean>;
+  llmModels: (provider: string) => Promise<string[]>;
+  llmProviders: () => Promise<string[]>;
 }
 
 declare global {

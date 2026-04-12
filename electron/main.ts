@@ -5,6 +5,8 @@ import { registerCompanyHandlers } from './ipc/companyHandlers';
 import { registerTeamHandlers } from './ipc/teamHandlers';
 import { registerAgentHandlers } from './ipc/agentHandlers';
 import { registerTaskHandlers } from './ipc/taskHandlers';
+import { registerChatHandlers } from './ipc/chatHandlers';
+import { registerSettingsHandlers } from './ipc/settingsHandlers';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -54,6 +56,8 @@ app.whenReady().then(() => {
   registerTeamHandlers(ipcMain, db);
   registerAgentHandlers(ipcMain, db);
   registerTaskHandlers(ipcMain, db);
+  registerChatHandlers(ipcMain, db);
+  registerSettingsHandlers(ipcMain, db);
 
   createWindow();
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useCompanyStore } from './stores/companyStore';
 import { useUIStore } from './stores/uiStore';
 import { TitleBar } from './components/layout/TitleBar';
@@ -9,6 +9,7 @@ import { OfficeView } from './components/office/OfficeView';
 import { DashboardView } from './components/dashboard/DashboardView';
 import { TaskView } from './components/task/TaskView';
 import { ChatPanel } from './components/chat/ChatPanel';
+import { SettingsModal } from './components/settings/SettingsModal';
 
 function MainContent() {
   const { mainView } = useUIStore();
@@ -27,6 +28,7 @@ function MainContent() {
 
 export default function App() {
   const { currentCompany, loadCompanies } = useCompanyStore();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     loadCompanies();
@@ -34,7 +36,7 @@ export default function App() {
 
   return (
     <div className="h-screen flex flex-col bg-slate-950 text-slate-100 overflow-hidden">
-      <TitleBar />
+      <TitleBar onSettingsClick={() => setSettingsOpen(true)} />
 
       {currentCompany ? (
         <>
@@ -48,6 +50,8 @@ export default function App() {
       ) : (
         <CompanySelector />
       )}
+
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

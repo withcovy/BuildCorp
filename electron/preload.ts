@@ -37,4 +37,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on(IPC_CHANNELS.CHAT_STREAM, (_event, data) => callback(data));
     return () => ipcRenderer.removeAllListeners(IPC_CHANNELS.CHAT_STREAM);
   },
+
+  // Settings
+  settingsGet: (key: string) => ipcRenderer.invoke('settings:get', key),
+  settingsSet: (key: string, value: any) => ipcRenderer.invoke('settings:set', key, value),
+  settingsGetAll: () => ipcRenderer.invoke('settings:getAll'),
+
+  // LLM
+  llmValidate: (provider: string) => ipcRenderer.invoke('llm:validate', provider),
+  llmModels: (provider: string) => ipcRenderer.invoke('llm:models', provider),
+  llmProviders: () => ipcRenderer.invoke('llm:providers'),
 });
