@@ -284,7 +284,9 @@ async function callClaudeAPI(
   const messages = [...history, { role: 'user', content: userMessage }]
     .filter((m) => m.role === 'user' || m.role === 'assistant');
 
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  // dev 서버에서는 Vite 프록시 사용, 그 외에는 직접 호출
+  const baseUrl = import.meta.env.DEV ? '/api/claude' : 'https://api.anthropic.com';
+  const response = await fetch(`${baseUrl}/v1/messages`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -320,7 +322,8 @@ async function callOpenAIAPI(
     { role: 'user', content: userMessage },
   ];
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+  const baseUrl = import.meta.env.DEV ? '/api/openai' : 'https://api.openai.com';
+  const response = await fetch(`${baseUrl}/v1/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
