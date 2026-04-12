@@ -1,97 +1,224 @@
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { Application, Container, Sprite, Texture, Graphics, Text, TextStyle } from 'pixi.js';
 import { useCompanyStore } from '../../stores/companyStore';
 import { useUIStore } from '../../stores/uiStore';
-import type { Agent } from '../../../shared/types';
+import { createCharacterCanvas, createDeskCanvas, SCALE } from './pixelSprites';
+import type { Agent, Team } from '../../../shared/types';
 
-// Placeholder office view - will be replaced with PixiJS canvas in Phase 4
+interface EmployeeNode {
+  agent: Agent;
+  team: Team;
+  container: Container;
+  charSprite: Sprite;
+  frame: number;
+  deskX: number;
+  deskY: number;
+}
+
 export function OfficeView() {
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const appRef = useRef<Application | null>(null);
+  const employeesRef = useRef<EmployeeNode[]>([]);
+  const animFrameRef = useRef<number>(0);
   const { teams, agents } = useCompanyStore();
   const { selectAgent } = useUIStore();
+  const [ready, setReady] = useState(false);
+
+  // Initialize PixiJS
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const app = new Application();
+    const initApp = async () => {
+      await app.init({
+        resizeTo: canvasRef.current!,
+        backgroundColor: 0x0f172a,
+        antialias: false,
+        resolution: 1,
+      });
+      canvasRef.current!.appendChild(app.canvas);
+      appRef.current = app;
+      setReady(true);
+    };
+
+    initApp();
+
+    return () => {
+      if (appRef.current) {
+        appRef.current.destroy(true);
+        appRef.current = null;
+      }
+      setReady(false);
+    };
+  }, []);
+
+  // Build office scene when teams/agents change
+  useEffect(() => {
+    if (!ready || !appRef.current) return;
+    const app = appRef.current;
+
+    // Clear previous
+    app.stage.removeChildren();
+    employeesRef.current = [];
+
+    // Floor
+    const floor = new Graphics();
+    floor.rect(0, 0, app.screen.width, app.screen.height);
+    floor.fill(0x0f172a);
+    app.stage.addChild(floor);
+
+    // Grid dots
+    const dots = new Graphics();
+    for (let x = 0; x < app.screen.width; x += 24) {
+      for (let y = 0; y < app.screen.height; y += 24) {
+        dots.circle(x, y, 0.5);
+        dots.fill(0x1e293b);
+      }
+    }
+    app.stage.addChild(dots);
+
+    // Layout teams in rooms
+    let roomX = 40;
+    let roomY = 40;
+    const ROOM_W = 280;
+    const ROOM_H = 200;
+    const ROOM_GAP = 30;
+    const maxCols = Math.max(1, Math.floor((app.screen.width - 40) / (ROOM_W + ROOM_GAP)));
+
+    teams.forEach((team, teamIdx) => {
+      const col = teamIdx % maxCols;
+      const row = Math.floor(teamIdx / maxCols);
+      const rx = roomX + col * (ROOM_W + ROOM_GAP);
+      const ry = roomY + row * (ROOM_H + ROOM_GAP);
+
+      // Room background
+      const room = new Graphics();
+      room.roundRect(rx, ry, ROOM_W, ROOM_H, 8);
+      room.fill(0x1e293b);
+      room.stroke({ color: parseInt(team.color.replace('#', '0x')), width: 1, alpha: 0.3 });
+      app.stage.addChild(room);
+
+      // Team label
+      const label = new Text({
+        text: team.name,
+        style: new TextStyle({ fontFamily: 'DungGeunMo, monospace', fontSize: 12, fill: team.color }),
+      });
+      label.x = rx + 10;
+      label.y = ry + 8;
+      app.stage.addChild(label);
+
+      // Place agents in team room
+      const teamAgents = agents[team.id] || [];
+      teamAgents.forEach((agent, agentIdx) => {
+        const col2 = agentIdx % 3;
+        const row2 = Math.floor(agentIdx / 3);
+        const deskX = rx + 20 + col2 * 88;
+        const deskY = ry + 36 + row2 * 80;
+
+        const employeeContainer = new Container();
+        employeeContainer.x = deskX;
+        employeeContainer.y = deskY;
+        employeeContainer.eventMode = 'static';
+        employeeContainer.cursor = 'pointer';
+        employeeContainer.on('pointerdown', () => selectAgent(agent.id));
+
+        // Desk
+        const deskCanvas = createDeskCanvas();
+        const deskTexture = Texture.from(deskCanvas);
+        const deskSprite = new Sprite(deskTexture);
+        deskSprite.y = 20;
+        employeeContainer.addChild(deskSprite);
+
+        // Character
+        const hairIdx = Math.abs(hashCode(agent.id)) % 6;
+        const shirtIdx = Math.abs(hashCode(agent.id + 'shirt')) % 6;
+        const charCanvas = createCharacterCanvas(hairIdx, shirtIdx, agent.status as any, 0);
+        const charTexture = Texture.from(charCanvas);
+        const charSprite = new Sprite(charTexture);
+        charSprite.x = 20;
+        charSprite.y = -4;
+        employeeContainer.addChild(charSprite);
+
+        // Name label
+        const nameText = new Text({
+          text: agent.name,
+          style: new TextStyle({ fontFamily: 'DungGeunMo, monospace', fontSize: 9, fill: '#94a3b8' }),
+        });
+        nameText.x = 12;
+        nameText.y = 52;
+        employeeContainer.addChild(nameText);
+
+        // Status indicator
+        const statusDot = new Graphics();
+        const statusColor = agent.status === 'working' ? 0x10b981 :
+          agent.status === 'meeting' ? 0x6366f1 :
+          agent.status === 'break' ? 0xf59e0b : 0x64748b;
+        statusDot.circle(8, 4, 3);
+        statusDot.fill(statusColor);
+        employeeContainer.addChild(statusDot);
+
+        app.stage.addChild(employeeContainer);
+
+        employeesRef.current.push({
+          agent,
+          team,
+          container: employeeContainer,
+          charSprite,
+          frame: 0,
+          deskX,
+          deskY,
+        });
+      });
+    });
+
+    // Empty state
+    if (teams.length === 0) {
+      const emptyText = new Text({
+        text: 'Create a team to start building your office',
+        style: new TextStyle({ fontFamily: 'DungGeunMo, monospace', fontSize: 14, fill: '#475569' }),
+      });
+      emptyText.x = app.screen.width / 2 - emptyText.width / 2;
+      emptyText.y = app.screen.height / 2;
+      app.stage.addChild(emptyText);
+    }
+  }, [ready, teams, agents, selectAgent]);
+
+  // Animation loop
+  useEffect(() => {
+    if (!ready || !appRef.current) return;
+    const app = appRef.current;
+
+    let tick = 0;
+    const animate = () => {
+      tick++;
+      if (tick % 30 === 0) { // Update every 30 frames (~0.5s)
+        employeesRef.current.forEach((emp) => {
+          emp.frame++;
+          const hairIdx = Math.abs(hashCode(emp.agent.id)) % 6;
+          const shirtIdx = Math.abs(hashCode(emp.agent.id + 'shirt')) % 6;
+          const newCanvas = createCharacterCanvas(hairIdx, shirtIdx, emp.agent.status as any, emp.frame);
+          const newTexture = Texture.from(newCanvas);
+          emp.charSprite.texture = newTexture;
+        });
+      }
+    };
+
+    app.ticker.add(animate);
+    return () => { app.ticker.remove(animate); };
+  }, [ready]);
 
   return (
-    <div className="flex-1 bg-slate-900 overflow-auto p-6">
-      <div className="max-w-5xl mx-auto">
-        {/* Office floor */}
-        <div className="bg-slate-800/50 rounded-xl border border-slate-700/50 p-6 min-h-[500px]">
-          <div className="font-pixel text-slate-500 text-xs mb-6 text-center">
-            -- Office Floor --
-          </div>
-
-          {teams.length === 0 ? (
-            <div className="flex items-center justify-center h-80 text-slate-600 text-sm">
-              Create a team from the sidebar to get started
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {teams.map((team) => (
-                <div
-                  key={team.id}
-                  className="bg-slate-800 rounded-lg border border-slate-700/50 p-4"
-                >
-                  {/* Team room header */}
-                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-700/50">
-                    <div
-                      className="w-3 h-3 rounded"
-                      style={{ backgroundColor: team.color }}
-                    />
-                    <span className="font-pixel text-slate-300 text-xs">{team.name}</span>
-                    <span className="text-slate-600 text-[10px] ml-auto">
-                      {(agents[team.id] || []).length} members
-                    </span>
-                  </div>
-
-                  {/* Agent desks */}
-                  <div className="grid grid-cols-2 gap-2">
-                    {(agents[team.id] || []).map((agent) => (
-                      <AgentDesk
-                        key={agent.id}
-                        agent={agent}
-                        onClick={() => selectAgent(agent.id)}
-                      />
-                    ))}
-                    {(agents[team.id] || []).length === 0 && (
-                      <div className="col-span-2 py-6 text-center text-slate-600 text-xs">
-                        No agents yet
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="flex-1 bg-slate-900 overflow-hidden">
+      <div ref={canvasRef} className="w-full h-full" />
     </div>
   );
 }
 
-function AgentDesk({ agent, onClick }: { agent: Agent; onClick: () => void }) {
-  const statusColors: Record<string, string> = {
-    idle: 'border-slate-600',
-    working: 'border-emerald-500/50',
-    break: 'border-amber-500/50',
-    meeting: 'border-indigo-500/50',
-  };
-
-  const statusEmoji: Record<string, string> = {
-    idle: '💤',
-    working: '⌨️',
-    break: '☕',
-    meeting: '💬',
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className={`bg-slate-900/50 rounded-lg border ${statusColors[agent.status]} p-3 text-left hover:bg-slate-900 transition-all group`}
-    >
-      {/* Pixel avatar placeholder */}
-      <div className="w-10 h-10 mx-auto mb-2 bg-slate-700 rounded border border-slate-600 flex items-center justify-center font-pixel text-lg pixel-art">
-        {statusEmoji[agent.status]}
-      </div>
-      <div className="text-center">
-        <div className="text-slate-300 text-xs font-medium truncate">{agent.name}</div>
-        <div className="text-slate-600 text-[10px] truncate">{agent.specialty || agent.llmProvider}</div>
-      </div>
-    </button>
-  );
+function hashCode(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash;
 }
