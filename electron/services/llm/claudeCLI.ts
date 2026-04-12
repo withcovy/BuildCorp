@@ -64,6 +64,13 @@ export class ClaudeCLIProvider implements LLMProvider {
     args.push('-');
 
     const workingDir = (options as any).workingDir || process.cwd();
+
+    console.log('[BuildCorp CLI] Messages count:', options.messages.length);
+    console.log('[BuildCorp CLI] History included:', historyMessages.length > 1);
+    console.log('[BuildCorp CLI] Prompt length:', fullPrompt.length);
+    console.log('[BuildCorp CLI] Prompt preview:', fullPrompt.slice(0, 200));
+    console.log('[BuildCorp CLI] Working dir:', workingDir);
+
     yield* this.runCLI(args, agentId, workingDir, fullPrompt);
   }
 
@@ -79,11 +86,14 @@ export class ClaudeCLIProvider implements LLMProvider {
 
   private async *runCLI(args: string[], agentId: string, cwd: string, stdinData?: string): AsyncGenerator<LLMStreamChunk> {
     try {
-      const proc = spawn('claude', args, {
-        shell: true,
+      // Windows에서 claude.cmd를 직접 찾아서 실행 (shell 오버헤드 제거)
+      const isWin = process.platform === 'win32';
+      const cmd = isWin ? 'claude.cmd' : 'claude';
+      const proc = spawn(cmd, args, {
         cwd,
         stdio: ['pipe', 'pipe', 'pipe'],
         env: { ...process.env },
+        windowsHide: true,
       });
 
       this.activeProcesses.set(agentId, proc);
@@ -149,7 +159,8 @@ export class ClaudeCLIProvider implements LLMProvider {
 
   async validateApiKey(): Promise<boolean> {
     return new Promise((resolve) => {
-      const proc = spawn('claude', ['--version'], { shell: true });
+      const isWin = process.platform === 'win32';
+      const proc = spawn(isWin ? 'claude.cmd' : 'claude', ['--version'], { windowsHide: true });
       proc.on('close', (code) => resolve(code === 0));
       proc.on('error', () => resolve(false));
     });

@@ -163,15 +163,24 @@ export function ChatPanel() {
             ■ Stop
           </button>
         ) : (
-          <div className="flex gap-2">
-            <input
+          <div className="flex gap-2 items-end">
+            <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
               }}
               placeholder={`Message ${selectedAgent.name}...`}
-              className="flex-1 bg-slate-800 text-slate-200 text-sm rounded-lg px-3 py-2 outline-none border border-slate-700 focus:border-indigo-500 transition-colors placeholder-slate-600"
+              rows={1}
+              onInput={(e) => {
+                const el = e.target as HTMLTextAreaElement;
+                el.style.height = 'auto';
+                const lineHeight = 20;
+                const maxHeight = lineHeight * 10;
+                el.style.height = Math.min(el.scrollHeight, maxHeight) + 'px';
+              }}
+              className="flex-1 bg-slate-800 text-slate-200 text-sm rounded-lg px-3 py-2 outline-none border border-slate-700 focus:border-indigo-500 transition-colors placeholder-slate-600 resize-none overflow-y-auto"
+              style={{ maxHeight: '200px' }}
             />
             <button
               onClick={handleSend}

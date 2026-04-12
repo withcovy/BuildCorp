@@ -70,6 +70,9 @@ export function registerChatHandlers(ipcMain: IpcMain, db: Database.Database) {
       'SELECT role, content FROM chat_messages WHERE agent_id = ? ORDER BY timestamp ASC'
     ).all(agentId);
 
+    console.log(`[BuildCorp Chat] Agent: ${agent.name}, Total messages in DB: ${historyRows.length}`);
+    console.log(`[BuildCorp Chat] History preview:`, historyRows.slice(-4).map((r: any) => `${r.role}: ${r.content.slice(0, 50)}`));
+
     const chatHistory: LLMMessage[] = historyRows
       .slice(0, -1) // 방금 추가한 메시지 제외 (아래에서 userMessage로 전달)
       .map((row) => ({
