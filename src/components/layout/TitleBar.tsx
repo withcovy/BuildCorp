@@ -11,7 +11,7 @@ const viewTabs: { key: MainView; label: string; icon: string }[] = [
 
 export function TitleBar({ onSettingsClick }: { onSettingsClick?: () => void }) {
   const { currentCompany, companies, selectCompany } = useCompanyStore();
-  const { mainView, setMainView } = useUIStore();
+  const { mainView, setMainView, goBack, canGoBack } = useUIStore();
   const [showSwitcher, setShowSwitcher] = useState(false);
 
   const handleBackToSelector = () => {
@@ -66,9 +66,18 @@ export function TitleBar({ onSettingsClick }: { onSettingsClick?: () => void }) 
         )}
       </div>
 
-      {/* View tabs */}
+      {/* Back button + View tabs */}
       {currentCompany && (
         <div className="no-drag flex items-center gap-1">
+          {canGoBack() && (
+            <button
+              onClick={goBack}
+              className="px-2 py-1 rounded text-xs font-medium text-slate-500 hover:text-slate-300 hover:bg-slate-800/50 transition-colors mr-1"
+              title="Back"
+            >
+              ←
+            </button>
+          )}
           {viewTabs.map((tab) => (
             <button
               key={tab.key}
