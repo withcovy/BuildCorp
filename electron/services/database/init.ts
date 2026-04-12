@@ -25,6 +25,7 @@ function createTables(db: Database.Database) {
       name TEXT NOT NULL,
       industry TEXT NOT NULL DEFAULT '',
       description TEXT NOT NULL DEFAULT '',
+      working_dir TEXT NOT NULL DEFAULT '',
       funds REAL NOT NULL DEFAULT 100000,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))

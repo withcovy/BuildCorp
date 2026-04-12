@@ -18,10 +18,10 @@ export function registerCompanyHandlers(ipcMain: IpcMain, db: Database.Database)
     const id = uuidv4();
     const now = new Date().toISOString();
     db.prepare(`
-      INSERT INTO companies (id, name, industry, description, funds, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(id, data.name || 'New Company', data.industry || '', data.description || '', data.funds ?? 100000, now, now);
-    return { id, ...data, funds: data.funds ?? 100000, createdAt: now, updatedAt: now };
+      INSERT INTO companies (id, name, industry, description, working_dir, funds, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, data.name || 'New Company', data.industry || '', data.description || '', data.workingDir || '', data.funds ?? 100000, now, now);
+    return { id, ...data, workingDir: data.workingDir || '', funds: data.funds ?? 100000, createdAt: now, updatedAt: now };
   });
 
   ipcMain.handle(IPC_CHANNELS.COMPANY_UPDATE, (_event, id: string, data: Partial<Company>) => {
@@ -32,6 +32,7 @@ export function registerCompanyHandlers(ipcMain: IpcMain, db: Database.Database)
     if (data.name !== undefined) { fields.push('name = ?'); values.push(data.name); }
     if (data.industry !== undefined) { fields.push('industry = ?'); values.push(data.industry); }
     if (data.description !== undefined) { fields.push('description = ?'); values.push(data.description); }
+    if (data.workingDir !== undefined) { fields.push('working_dir = ?'); values.push(data.workingDir); }
     if (data.funds !== undefined) { fields.push('funds = ?'); values.push(data.funds); }
     fields.push('updated_at = ?');
     values.push(now);
@@ -54,6 +55,7 @@ function mapRowToCompany(row: any): Company {
     name: row.name,
     industry: row.industry,
     description: row.description,
+    workingDir: row.working_dir || '',
     funds: row.funds,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

@@ -38,17 +38,18 @@ export class ClaudeCLIProvider implements LLMProvider {
       return;
     }
 
-    // system prompt를 메시지 앞에 추가
-    let prompt = lastUserMsg.content;
-    if (options.systemPrompt && !sessionId) {
-      prompt = `[System: ${options.systemPrompt}]\n\n${prompt}`;
-    }
+    const prompt = lastUserMsg.content;
 
     // claude CLI 인자 구성
     const args: string[] = [
       '--print',          // 비대화형, 결과만 출력
       '--output-format', 'text',
     ];
+
+    // System prompt 전달
+    if (options.systemPrompt) {
+      args.push('--system-prompt', options.systemPrompt);
+    }
 
     // 세션 이어가기
     if (sessionId) {
@@ -63,14 +64,16 @@ export class ClaudeCLIProvider implements LLMProvider {
     // 프롬프트
     args.push(prompt);
 
-    // CLI 실행
-    const result = yield* this.runCLI(args, agentId);
+    // CLI 실행 (workingDir 전달)
+    const workingDir = (options as any).workingDir || process.cwd();
+    const result = yield* this.runCLI(args, agentId, workingDir);
   }
 
-  private async *runCLI(args: string[], agentId: string): AsyncGenerator<LLMStreamChunk> {
+  private async *runCLI(args: string[], agentId: string, cwd: string): AsyncGenerator<LLMStreamChunk> {
     try {
       const proc = spawn('claude', args, {
         shell: true,
+        cwd,
         stdio: ['pipe', 'pipe', 'pipe'],
         env: { ...process.env },
       });

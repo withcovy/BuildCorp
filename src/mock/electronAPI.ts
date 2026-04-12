@@ -41,6 +41,7 @@ export const mockElectronAPI = {
       name: data.name || 'New Company',
       industry: data.industry || '',
       description: data.description || '',
+      workingDir: data.workingDir || '',
       funds: data.funds ?? 100000,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

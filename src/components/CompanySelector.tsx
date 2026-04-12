@@ -6,13 +6,13 @@ const TEAM_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#06
 export function CompanySelector() {
   const { companies, createCompany, selectCompany, deleteCompany } = useCompanyStore();
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: '', industry: '', description: '' });
+  const [form, setForm] = useState({ name: '', industry: '', description: '', workingDir: '' });
 
   const handleCreate = async () => {
     if (!form.name.trim()) return;
     const company = await createCompany(form);
     await selectCompany(company);
-    setForm({ name: '', industry: '', description: '' });
+    setForm({ name: '', industry: '', description: '', workingDir: '' });
     setShowCreate(false);
   };
 
@@ -88,6 +88,16 @@ export function CompanySelector() {
               rows={3}
               className="w-full bg-slate-900 text-slate-200 text-sm rounded-lg px-3 py-2.5 outline-none border border-slate-700 focus:border-indigo-500 transition-colors placeholder-slate-600 resize-none"
             />
+            <div>
+              <label className="text-slate-500 text-xs mb-1 block">Project Folder</label>
+              <input
+                value={form.workingDir}
+                onChange={(e) => setForm({ ...form, workingDir: e.target.value })}
+                placeholder="e.g. D:\projects\my-app"
+                className="w-full bg-slate-900 text-slate-200 text-sm rounded-lg px-3 py-2.5 outline-none border border-slate-700 focus:border-indigo-500 transition-colors placeholder-slate-600"
+              />
+              <div className="text-slate-600 text-[10px] mt-1">AI agents will work in this folder</div>
+            </div>
             <div className="flex gap-3">
               <button
                 onClick={handleCreate}

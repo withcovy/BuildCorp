@@ -4,6 +4,7 @@ export interface Company {
   name: string;
   industry: string;
   description: string;
+  workingDir: string;    // 프로젝트 폴더 경로
   funds: number;
   createdAt: string;
   updatedAt: string;

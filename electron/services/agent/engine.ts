@@ -53,6 +53,7 @@ export async function runAgent(options: AgentRunOptions): Promise<string> {
       messages,
       systemPrompt,
       agentId: agent.id,
+      workingDir,
     } as any);
 
     for await (const chunk of stream) {

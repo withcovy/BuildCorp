@@ -66,6 +66,10 @@ export function registerChatHandlers(ipcMain: IpcMain, db: Database.Database) {
     // 에이전트 상태를 working으로 변경
     db.prepare('UPDATE agents SET status = ? WHERE id = ?').run('working', agentId);
 
+    // 회사의 프로젝트 폴더 가져오기
+    const companyRow: any = db.prepare('SELECT working_dir FROM companies WHERE id = ?').get(agent.companyId);
+    const workingDir = companyRow?.working_dir || process.cwd();
+
     // BrowserWindow 찾기 (스트리밍용)
     const win = BrowserWindow.getAllWindows()[0];
 
@@ -75,7 +79,7 @@ export function registerChatHandlers(ipcMain: IpcMain, db: Database.Database) {
         agent,
         userMessage: message,
         chatHistory,
-        workingDir: process.cwd(), // TODO: 회사별 워킹 디렉토리 설정
+        workingDir,
         onStream: (chunk) => {
           if (win && !win.isDestroyed()) {
             win.webContents.send(IPC_CHANNELS.CHAT_STREAM, {
