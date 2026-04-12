@@ -139,13 +139,22 @@ function TeamItem({
             <div
               key={agent.id}
               onClick={() => onSelectAgent(agent.id)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                (window as any).__openInventory?.(agent.id);
+              }}
               className="flex items-center gap-2 px-3 py-1.5 pl-7 cursor-pointer hover:bg-slate-800/30 transition-colors group"
+              title="Right-click for inventory"
             >
               <StatusDot status={agent.status} />
               <span className="text-slate-400 text-xs truncate flex-1">{agent.name}</span>
-              <span className="text-slate-700 text-[10px] group-hover:text-slate-500 transition-colors">
-                {agent.llmProvider}
-              </span>
+              <button
+                onClick={(e) => { e.stopPropagation(); (window as any).__openInventory?.(agent.id); }}
+                className="text-slate-700 text-[10px] group-hover:text-indigo-400 transition-colors"
+                title="Inventory"
+              >
+                🎒
+              </button>
             </div>
           ))}
         </div>
