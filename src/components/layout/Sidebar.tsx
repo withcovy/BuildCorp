@@ -220,6 +220,13 @@ function AgentRow({ agent, onSelect }: { agent: Agent; onSelect: () => void }) {
         </span>
       )}
       <button
+        onClick={(e) => { e.stopPropagation(); (window as any).__openAgentEdit?.(agent.id); }}
+        className="text-slate-700 text-[10px] group-hover:text-slate-400 transition-colors"
+        title="Agent settings"
+      >
+        ⚙
+      </button>
+      <button
         onClick={(e) => { e.stopPropagation(); (window as any).__openInventory?.(agent.id); }}
         className="text-slate-700 text-[10px] group-hover:text-indigo-400 transition-colors"
         title="Inventory"

@@ -12,6 +12,7 @@ import { WorkflowView } from './components/workflow/WorkflowView';
 import { ChatPanel } from './components/chat/ChatPanel';
 import { SettingsModal } from './components/settings/SettingsModal';
 import { InventoryPanel } from './components/agent/InventoryPanel';
+import { AgentEditPanel } from './components/agent/AgentEditPanel';
 
 function MainContent() {
   const { mainView } = useUIStore();
@@ -34,15 +35,20 @@ export default function App() {
   const { currentCompany, loadCompanies } = useCompanyStore();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [inventoryAgentId, setInventoryAgentId] = useState<string | null>(null);
+  const [editAgentId, setEditAgentId] = useState<string | null>(null);
 
   useEffect(() => {
     loadCompanies();
   }, [loadCompanies]);
 
-  // Expose inventory opener globally for Sidebar
+  // Expose global openers for Sidebar
   useEffect(() => {
     (window as any).__openInventory = (agentId: string) => setInventoryAgentId(agentId);
-    return () => { delete (window as any).__openInventory; };
+    (window as any).__openAgentEdit = (agentId: string) => setEditAgentId(agentId);
+    return () => {
+      delete (window as any).__openInventory;
+      delete (window as any).__openAgentEdit;
+    };
   }, []);
 
   return (
@@ -65,6 +71,9 @@ export default function App() {
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {inventoryAgentId && (
         <InventoryPanel agentId={inventoryAgentId} onClose={() => setInventoryAgentId(null)} />
+      )}
+      {editAgentId && (
+        <AgentEditPanel agentId={editAgentId} onClose={() => setEditAgentId(null)} />
       )}
     </div>
   );

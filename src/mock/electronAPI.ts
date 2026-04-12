@@ -193,16 +193,18 @@ export const mockElectronAPI = {
     history.push({ id: uuidv4(), agentId, role: 'user', content: message, timestamp: new Date().toISOString() });
     setStore(chatKey, history);
 
-    // API 키 확인
+    // API 키 확인: 에이전트별 키 우선, 없으면 글로벌 키
     const provider = agent.llmProvider;
-    const apiKey = provider === 'claude'
+    const agentApiKey = localStorage.getItem(`buildcorp_agent_apikey_${agentId}`) || '';
+    const globalApiKey = provider === 'claude'
       ? getSettings('llm.claude.apiKey')
       : provider === 'openai'
       ? getSettings('llm.openai.apiKey')
       : null;
+    const apiKey = agentApiKey || globalApiKey;
 
     if (!apiKey) {
-      const noKeyMsg = `Settings에서 ${provider} API 키를 입력해주세요.`;
+      const noKeyMsg = `에이전트 설정(⚙)에서 ${provider} API 키를 입력해주세요.`;
       // 스트림 콜백으로 전달
       setTimeout(() => {
         chatStreamListeners.forEach((cb) => cb({ agentId, type: 'text', content: noKeyMsg }));
