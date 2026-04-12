@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-electron/
+*.db
+.env
+.env.local
+.DS_Store
+Thumbs.db

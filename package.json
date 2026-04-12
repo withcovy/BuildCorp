@@ -1,0 +1,41 @@
+{
+  "name": "buildcorp",
+  "version": "0.1.0",
+  "description": "AI-Powered Virtual Office - Gamified Agent Workspace",
+  "main": "dist-electron/electron/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"vite\" \"npm run electron:dev\"",
+    "electron:dev": "wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .",
+    "build": "tsc -p tsconfig.electron.json && vite build",
+    "electron:build": "npm run build && electron-builder",
+    "vite:dev": "vite",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": ["ai", "agent", "pixel-art", "office", "electron"],
+  "author": "",
+  "license": "MIT",
+  "type": "commonjs",
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^41.2.0",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^6.0.2",
+    "vite": "^8.0.8",
+    "wait-on": "^9.0.5"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.8.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.14.0",
+    "uuid": "^13.0.0",
+    "zustand": "^5.0.12"
+  }
+}
