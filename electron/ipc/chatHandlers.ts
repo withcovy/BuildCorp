@@ -3,9 +3,23 @@ import Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 import { IPC_CHANNELS } from '../../shared/types';
 import { runAgent } from '../services/agent/engine';
+import { llmManager } from '../services/llm/manager';
+import { ClaudeCLIProvider } from '../services/llm/claudeCLI';
 import type { LLMMessage } from '../services/llm/types';
 
 export function registerChatHandlers(ipcMain: IpcMain, db: Database.Database) {
+  // 에이전트 중단
+  ipcMain.handle('chat:stop', (_event, agentId: string) => {
+    const cliProvider = llmManager.getProvider('claude-cli');
+    if (cliProvider && cliProvider instanceof ClaudeCLIProvider) {
+      const stopped = cliProvider.stop(agentId);
+      if (stopped) {
+        db.prepare('UPDATE agents SET status = ? WHERE id = ?').run('idle', agentId);
+      }
+      return { success: stopped };
+    }
+    return { success: false };
+  });
   // 채팅 히스토리 조회
   ipcMain.handle(IPC_CHANNELS.CHAT_HISTORY, (_event, agentId: string) => {
     const rows = db.prepare(

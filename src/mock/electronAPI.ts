@@ -250,6 +250,8 @@ export const mockElectronAPI = {
     }
   },
 
+  chatStop: async (_agentId: string) => ({ success: true }),
+
   chatHistory: async (agentId: string) => getStore<any>(`chat_${agentId}`),
 
   onChatStream: (callback: (data: any) => void) => {

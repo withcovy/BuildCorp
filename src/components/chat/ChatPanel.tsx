@@ -150,25 +150,38 @@ export function ChatPanel() {
 
       {/* Input */}
       <div className="p-3 border-t border-slate-800">
-        <div className="flex gap-2">
-          <input
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
-            }}
-            placeholder={loading ? 'Working...' : `Message ${selectedAgent.name}...`}
-            disabled={loading}
-            className="flex-1 bg-slate-800 text-slate-200 text-sm rounded-lg px-3 py-2 outline-none border border-slate-700 focus:border-indigo-500 transition-colors placeholder-slate-600 disabled:opacity-50"
-          />
+        {loading ? (
           <button
-            onClick={handleSend}
-            disabled={!message.trim() || loading}
-            className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white text-sm px-3 py-2 rounded-lg transition-colors"
+            onClick={async () => {
+              await window.electronAPI.chatStop(selectedAgentId);
+              setLoading(false);
+              setStreaming('');
+              setToolActivity(null);
+            }}
+            className="w-full bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/30 text-rose-400 text-sm py-2 rounded-lg transition-colors"
           >
-            ↑
+            ■ Stop
           </button>
-        </div>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+              }}
+              placeholder={`Message ${selectedAgent.name}...`}
+              className="flex-1 bg-slate-800 text-slate-200 text-sm rounded-lg px-3 py-2 outline-none border border-slate-700 focus:border-indigo-500 transition-colors placeholder-slate-600"
+            />
+            <button
+              onClick={handleSend}
+              disabled={!message.trim()}
+              className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white text-sm px-3 py-2 rounded-lg transition-colors"
+            >
+              ↑
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

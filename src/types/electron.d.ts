@@ -25,6 +25,7 @@ export interface ElectronAPI {
   taskDelete: (id: string) => Promise<{ success: boolean }>;
   // Chat
   chatSend: (agentId: string, message: string) => Promise<any>;
+  chatStop: (agentId: string) => Promise<{ success: boolean }>;
   chatHistory: (agentId: string) => Promise<any[]>;
   onChatStream: (callback: (data: any) => void) => () => void;
   // Settings
