@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { useCompanyStore } from '../../stores/companyStore';
 import { useUIStore } from '../../stores/uiStore';
+import { FileExplorer } from './FileExplorer';
 import type { Team, Agent } from '../../../shared/types';
+
+type SidebarTab = 'teams' | 'files';
 
 export function Sidebar() {
   const { currentCompany, teams, agents, createTeam, deleteTeam, createAgent } = useCompanyStore();
   const { selectedTeamId, selectTeam, selectAgent, sidebarCollapsed } = useUIStore();
   const [showNewTeam, setShowNewTeam] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
+  const [tab, setTab] = useState<SidebarTab>('teams');
 
   if (sidebarCollapsed || !currentCompany) return null;
 
@@ -28,6 +32,32 @@ export function Sidebar() {
 
   return (
     <div className="w-60 bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden">
+      {/* Tab bar */}
+      <div className="flex border-b border-slate-800">
+        <button
+          onClick={() => setTab('teams')}
+          className={`flex-1 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+            tab === 'teams' ? 'text-slate-300 border-b-2 border-indigo-500' : 'text-slate-600 hover:text-slate-400'
+          }`}
+        >
+          Teams
+        </button>
+        <button
+          onClick={() => setTab('files')}
+          className={`flex-1 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+            tab === 'files' ? 'text-slate-300 border-b-2 border-indigo-500' : 'text-slate-600 hover:text-slate-400'
+          }`}
+        >
+          Files
+        </button>
+      </div>
+
+      {tab === 'files' ? (
+        <div className="flex-1 overflow-y-auto">
+          <FileExplorer />
+        </div>
+      ) : (<>
+
       {/* Teams header */}
       <div className="p-3 border-b border-slate-800 flex items-center justify-between">
         <span className="text-slate-400 text-xs font-semibold uppercase tracking-wider">Teams</span>
@@ -88,6 +118,7 @@ export function Sidebar() {
           </span>
         </div>
       </div>
+      </>)}
     </div>
   );
 }

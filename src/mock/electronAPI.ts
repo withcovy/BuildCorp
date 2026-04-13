@@ -282,8 +282,9 @@ export const mockElectronAPI = {
   },
   llmProviders: async () => ['claude', 'openai', 'ollama'],
 
-  // Dialog (browser mode: prompt fallback)
+  // Dialog & File system (browser mode: limited)
   selectFolder: async () => prompt('Enter project folder path:'),
+  listDir: async (_dirPath: string) => [],
 };
 
 // --- 스트리밍 리스너 ---

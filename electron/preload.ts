@@ -71,6 +71,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   llmModels: (provider: string) => ipcRenderer.invoke('llm:models', provider),
   llmProviders: () => ipcRenderer.invoke('llm:providers'),
 
-  // Dialog
+  // Dialog & File system
   selectFolder: () => ipcRenderer.invoke('dialog:selectFolder'),
+  listDir: (dirPath: string) => ipcRenderer.invoke('fs:listDir', dirPath),
 });

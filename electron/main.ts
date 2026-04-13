@@ -75,6 +75,27 @@ app.whenReady().then(() => {
     return result.canceled ? null : result.filePaths[0];
   });
 
+  // 파일 탐색기
+  ipcMain.handle('fs:listDir', (_event, dirPath: string) => {
+    const fs = require('fs');
+    const path = require('path');
+    if (!dirPath || !fs.existsSync(dirPath)) return [];
+    try {
+      const items = fs.readdirSync(dirPath, { withFileTypes: true });
+      return items
+        .filter((item: any) => !item.name.startsWith('.') && item.name !== 'node_modules')
+        .map((item: any) => ({
+          name: item.name,
+          isDir: item.isDirectory(),
+          path: path.join(dirPath, item.name),
+        }))
+        .sort((a: any, b: any) => {
+          if (a.isDir !== b.isDir) return a.isDir ? -1 : 1;
+          return a.name.localeCompare(b.name);
+        });
+    } catch { return []; }
+  });
+
   createWindow();
 
   app.on('activate', () => {

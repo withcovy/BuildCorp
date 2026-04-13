@@ -36,8 +36,9 @@ export interface ElectronAPI {
   llmValidate: (provider: string) => Promise<boolean>;
   llmModels: (provider: string) => Promise<string[]>;
   llmProviders: () => Promise<string[]>;
-  // Dialog
+  // Dialog & File system
   selectFolder: () => Promise<string | null>;
+  listDir: (dirPath: string) => Promise<{ name: string; isDir: boolean; path: string }[]>;
 }
 
 declare global {

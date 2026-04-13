@@ -85,7 +85,9 @@ export function registerChatHandlers(ipcMain: IpcMain, db: Database.Database) {
 
     // 회사의 프로젝트 폴더 가져오기
     const companyRow: any = db.prepare('SELECT working_dir FROM companies WHERE id = ?').get(agent.companyId);
-    const workingDir = companyRow?.working_dir || process.cwd();
+    const dir = companyRow?.working_dir?.trim();
+    const workingDir = dir && dir.length > 0 ? dir : process.cwd();
+    console.log(`[BuildCorp Chat] Working dir: "${workingDir}" (from DB: "${companyRow?.working_dir}")`);
 
     // BrowserWindow 찾기 (스트리밍용)
     const win = BrowserWindow.getAllWindows()[0];
