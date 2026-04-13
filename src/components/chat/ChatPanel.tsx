@@ -125,6 +125,12 @@ export function ChatPanel() {
     }
   };
 
+  const handleClearChat = async () => {
+    await window.electronAPI.chatClear(selectedAgentId);
+    setMessages([]);
+    setStreaming('');
+  };
+
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
   };
@@ -142,6 +148,13 @@ export function ChatPanel() {
             {selectedAgent.llmProvider} / {selectedAgent.llmModel}
           </div>
         </div>
+        <button
+          onClick={handleClearChat}
+          className="text-slate-700 hover:text-rose-400 text-[10px] transition-colors"
+          title="Clear chat"
+        >
+          Clear
+        </button>
         <button
           onClick={() => toggleChatPanel(false)}
           className="text-slate-600 hover:text-slate-400 transition-colors"

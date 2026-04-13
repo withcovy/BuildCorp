@@ -55,6 +55,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Chat
   chatSend: (agentId: string, message: string) => ipcRenderer.invoke(CH.CHAT_SEND, agentId, message),
   chatStop: (agentId: string) => ipcRenderer.invoke('chat:stop', agentId),
+  chatClear: (agentId: string) => ipcRenderer.invoke('chat:clear', agentId),
   chatHistory: (agentId: string) => ipcRenderer.invoke(CH.CHAT_HISTORY, agentId),
   onChatStream: (callback: (data: any) => void) => {
     ipcRenderer.on(CH.CHAT_STREAM, (_event: any, data: any) => callback(data));

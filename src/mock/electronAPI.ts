@@ -251,6 +251,7 @@ export const mockElectronAPI = {
   },
 
   chatStop: async (_agentId: string) => ({ success: true }),
+  chatClear: async (agentId: string) => { setStore(`chat_${agentId}`, []); return { success: true }; },
 
   chatHistory: async (agentId: string) => getStore<any>(`chat_${agentId}`),
 

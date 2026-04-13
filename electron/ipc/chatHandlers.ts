@@ -8,6 +8,12 @@ import { ClaudeCLIProvider } from '../services/llm/claudeCLI';
 import type { LLMMessage } from '../services/llm/types';
 
 export function registerChatHandlers(ipcMain: IpcMain, db: Database.Database) {
+  // 채팅 히스토리 초기화
+  ipcMain.handle('chat:clear', (_event, agentId: string) => {
+    db.prepare('DELETE FROM chat_messages WHERE agent_id = ?').run(agentId);
+    return { success: true };
+  });
+
   // 에이전트 중단
   ipcMain.handle('chat:stop', (_event, agentId: string) => {
     const cliProvider = llmManager.getProvider('claude-cli');
@@ -75,6 +81,8 @@ export function registerChatHandlers(ipcMain: IpcMain, db: Database.Database) {
 
     const chatHistory: LLMMessage[] = historyRows
       .slice(0, -1) // 방금 추가한 메시지 제외 (아래에서 userMessage로 전달)
+      .filter((row: any) => row.content && row.content.trim().length > 0) // 빈 메시지 제거
+      .slice(-20) // 최근 20개만 (너무 많으면 느려짐)
       .map((row) => ({
         role: row.role as 'user' | 'assistant',
         content: row.content,
@@ -109,11 +117,13 @@ export function registerChatHandlers(ipcMain: IpcMain, db: Database.Database) {
         },
       });
 
-      // 응답 메시지 저장
-      const assistantMsgId = uuidv4();
-      db.prepare(
-        'INSERT INTO chat_messages (id, agent_id, role, content, timestamp) VALUES (?, ?, ?, ?, ?)'
-      ).run(assistantMsgId, agentId, 'assistant', result, new Date().toISOString());
+      // 응답 메시지 저장 (빈 응답은 저장하지 않음)
+      if (result && result.trim().length > 0) {
+        const assistantMsgId = uuidv4();
+        db.prepare(
+          'INSERT INTO chat_messages (id, agent_id, role, content, timestamp) VALUES (?, ?, ?, ?, ?)'
+        ).run(assistantMsgId, agentId, 'assistant', result, new Date().toISOString());
+      }
 
       // 통계 업데이트
       const stats = JSON.parse(agentRow.stats_json);
